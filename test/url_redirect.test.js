@@ -2,6 +2,7 @@ import * as chai from 'chai';
 import chaiHttp from 'chai-http';
 import supertest from 'supertest';
 import dotenv from 'dotenv';
+import Url from '../models/Url.js';
 dotenv.config();
 const { expect } = chai;
 import app from '../app.js';
@@ -9,6 +10,23 @@ import app from '../app.js';
 chai.use(chaiHttp);
 
 describe('GET /:url', () => {
+
+    let short_url; // This will be dynamically set in the beforeEach
+
+    beforeEach(async () => {
+        // Upsert a test URL entry
+        const criteria = { short_url: 'zkngx6' };
+        const update = { short_url: 'zkngx6', original_url: 'https://example.com' };
+        const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+
+        const result = await Url.findOneAndUpdate(criteria, update, options);
+        short_url = result.short_url;
+    });
+
+    afterEach(async () => {
+        // Delete the test URL entry
+        await Url.deleteOne({ short_url });
+    });
 
     //I did not write a test for if the user passes an empty short url because it would just direct the user to the default '/' route
 
@@ -22,7 +40,6 @@ describe('GET /:url', () => {
             });
     });
 
-    //This will only pass if the short url exists in your database.
     it('should redirect to the original URL for a valid short URL', (done) => {
         supertest(app)
           .get('/zkngx6')
